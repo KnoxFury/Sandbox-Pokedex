@@ -30,21 +30,30 @@ def get_multiplier(atk_types, def_types):
     return best
 
 def eff_label(m):
-    return ("Super effective!" if m >= 2 else "Not very effective..." if m < 1 else "")
+    if m >= 2:
+        return "Super effective!"
+    elif m < 1:
+        return "Not very effective..."
+    else:
+        return ""
 
 def simulate_battle(p1, p2):
-    def types(p): return [t for t in [str(p.get("type1","")), str(p.get("type2",""))] if t and t != "nan"]
+    def types(p):
+        return [t for t in [str(p.get("type1","")), str(p.get("type2",""))] if t and t != "nan"]
 
     hp1, hp2 = int(p1["hp"]), int(p2["hp"])
     n1, n2 = p1["name"], p2["name"]
     log = [f"⚔️  {n1}  vs  {n2}\n{'─'*36}"]
 
-    first, second = (p1, p2) if int(p1["speed"]) >= int(p2["speed"]) else (p2, p1)
+    if int(p1["speed"]) >= int(p2["speed"]):
+        first, second = p1, p2
+    else:
+        first, second = p2, p1
     hp = {n1: hp1, n2: hp2}
 
     turn = 1
     while hp[n1] > 0 and hp[n2] > 0:
-        log.append(f"\n🔄 Turn {turn}")
+        log.append(f"\n Turn {turn}")
         for atk, dfn in [(first, second), (second, first)]:
             if hp[atk["name"]] <= 0 or hp[dfn["name"]] <= 0:
                 break
@@ -55,12 +64,20 @@ def simulate_battle(p1, p2):
             hp[dfn["name"]] -= dmg
             label = eff_label(m)
             remaining = max(0, hp[dfn["name"]])
-            line = f"  {atk['name']} → {dfn['name']}: {dmg} dmg (×{m}){(' '+label) if label else ''} | {dfn['name']} HP: {remaining}"
+            label_text = f" {label}" if label else ""
+            line = f"  {atk['name']} → {dfn['name']}: {dmg} dmg (×{m}){label_text} | {dfn['name']} HP: {remaining}"
             log.append(line)
         turn += 1
-        if turn > 50: log.append("  ⏱️ Draw — too many turns!"); break
+        if turn > 50:
+            log.append(" Draw — too many turns!")
+            break
 
-    winner = n1 if hp[n1] > 0 else n2
-    if hp[n1] <= 0 and hp[n2] <= 0: winner = "Draw"
-    log.append(f"\n{'─'*36}\n🏆 Winner: {winner}")
+    if hp[n1] > 0:
+        winner = n1
+    else:
+        winner = n2
+    
+    if hp[n1] <= 0 and hp[n2] <= 0:
+        winner = "Draw"
+    log.append(f"\n{'─'*36}\n Winner: {winner}")
     return "\n".join(log)
