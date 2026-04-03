@@ -10,7 +10,7 @@ TYPE_CHART = {
     "ground":   {"fire":2,"electric":2,"grass":0.5,"poison":2,"flying":0,"bug":0.5,"rock":2,"steel":2},
     "flying":   {"electric":0.5,"grass":2,"fighting":2,"bug":2,"rock":0.5,"steel":0.5},
     "psychic":  {"fighting":2,"poison":2,"psychic":0.5,"dark":0,"steel":0.5},
-    "bug":      {"fire":0.5,"grass":2,"poison":0.5,"fighting":0.5,"flying":0.5,"psychic":2,"ghost":0.5,"dark":2,"steel":0.5,"fairy":0.5},
+    "bug":      {"fire":0.5,"grass":2,"fighting":0.5,"flying":0.5,"psychic":2,"ghost":0.5,"dark":2,"steel":0.5,"fairy":0.5},
     "rock":     {"fire":2,"ice":2,"fighting":0.5,"ground":0.5,"flying":2,"bug":2,"steel":0.5},
     "ghost":    {"normal":0,"psychic":2,"ghost":2,"dark":0.5},
     "dragon":   {"dragon":2,"steel":0.5,"fairy":0},
@@ -30,30 +30,26 @@ def get_multiplier(atk_types, def_types):
     return best
 
 def eff_label(m):
-    if m >= 2:
-        return "Super effective!"
-    elif m < 1:
-        return "Not very effective..."
-    else:
-        return ""
+    return ("Super effective!" if m >= 2 else "Not very effective..." if m < 1 else "")
 
 def simulate_battle(p1, p2):
     def types(p):
-        return [t for t in [str(p.get("type1","")), str(p.get("type2",""))] if t and t != "nan"]
+        result = []
+        for t in [str(p.get("type1","")), str(p.get("type2",""))]:
+            if t and t != "nan":
+                result.append(t)
+        return result
 
     hp1, hp2 = int(p1["hp"]), int(p2["hp"])
     n1, n2 = p1["name"], p2["name"]
-    log = [f"⚔️  {n1}  vs  {n2}\n{'─'*36}"]
+    log = [f"{n1} vs {n2}\n{'─'*35}"]
 
-    if int(p1["speed"]) >= int(p2["speed"]):
-        first, second = p1, p2
-    else:
-        first, second = p2, p1
+    first, second = (p1, p2) if int(p1["speed"]) >= int(p2["speed"]) else (p2, p1)
     hp = {n1: hp1, n2: hp2}
 
     turn = 1
     while hp[n1] > 0 and hp[n2] > 0:
-        log.append(f"\n Turn {turn}")
+        log.append(f"Turn {turn}")
         for atk, dfn in [(first, second), (second, first)]:
             if hp[atk["name"]] <= 0 or hp[dfn["name"]] <= 0:
                 break
@@ -64,20 +60,19 @@ def simulate_battle(p1, p2):
             hp[dfn["name"]] -= dmg
             label = eff_label(m)
             remaining = max(0, hp[dfn["name"]])
-            label_text = f" {label}" if label else ""
-            line = f"  {atk['name']} → {dfn['name']}: {dmg} dmg (×{m}){label_text} | {dfn['name']} HP: {remaining}"
+            if label:
+                extra = ' ' + label
+            else:
+                extra = ''
+            line = f"  {atk['name']} => {dfn['name']}:\n {dmg} dmg (×{m}){extra}\n {dfn['name']} HP: {remaining}\n"
             log.append(line)
         turn += 1
         if turn > 50:
-            log.append(" Draw — too many turns!")
+            log.append("Draw — too many turns!")
             break
 
-    if hp[n1] > 0:
-        winner = n1
-    else:
-        winner = n2
-    
+    winner = n1 if hp[n1] > 0 else n2
     if hp[n1] <= 0 and hp[n2] <= 0:
         winner = "Draw"
-    log.append(f"\n{'─'*36}\n Winner: {winner}")
+    log.append(f"\n{'─'*35}\nWinner: {winner}")
     return "\n".join(log)
