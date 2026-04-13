@@ -28,7 +28,7 @@ def simulate_battle(p1, p2):
     n1, n2 = p1["Name"], p2["Name"]
     log = [f"{n1} vs {n2}\n{'─'*35}"]
 
-    if int(p1["Spe"]) >= int(p2["Spe"]):
+    if int(p1["Spd"]) >= int(p2["Spd"]):
         first, second = p1, p2
     else:
         first, second = p2, p1
@@ -41,8 +41,8 @@ def simulate_battle(p1, p2):
             if hp[atk["Name"]] <= 0 or hp[dfn["Name"]] <= 0:
                 break
             m = get_multiplier(types(atk), dfn)
-            phys_ratio = int(atk["Att"]) / int(dfn["Def"])
-            spec_ratio = int(atk["Spa"]) / int(dfn["Spd"])
+            phys_ratio = int(atk["Atk"]) / int(dfn["Def"])
+            spec_ratio = int(atk["Sp.Atk"]) / int(dfn["Sp.Def"])
             dmg = max(1, int(int(dfn["HP"]) * max(phys_ratio, spec_ratio) * m * 0.07) + random.randint(-3, 3))
             hp[dfn["Name"]] -= dmg
             label = eff_label(m)
