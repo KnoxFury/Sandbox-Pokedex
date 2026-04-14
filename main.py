@@ -3,6 +3,7 @@ from tkinter import messagebox
 import pandas as pd, numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from PIL import Image
 from battle import simulate_battle
 
 ctk.set_appearance_mode("dark")
@@ -76,7 +77,6 @@ def show_Stats(i, p):
             lbl = ctk.CTkLabel(badge_frame,text=str(t).upper(),fg_color=c,corner_radius=6,padx=8,pady=2,font=("Roboto", 11, "bold"))
             lbl.pack(side="left", padx=4)
 
-
     for r, s in enumerate(Stats, start=2):
         lbl = ctk.CTkLabel(stat_frame, text=f" {s}: {int(p[s])}", anchor="w", font=("Roboto", 13))
         lbl.grid(row=r, column=col, columnspan=2, sticky="w", padx=15, pady=2)
@@ -84,6 +84,26 @@ def show_Stats(i, p):
     total = ctk.CTkLabel(stat_frame, text=f"Total: {sum(int(p[s]) for s in Stats)}", font=("Roboto", 13, "bold"), text_color="#1F6AA5")
     total.grid(row=len(Stats)+2, column=col, columnspan=2, pady=(6, 10))
     labels[i].append(total)
+
+image_labels = [None, None]
+
+def show_image(idx, name):
+    global image_labels
+
+    if image_labels[idx] is not None:
+        image_labels[idx].destroy()
+
+    path = f"PokemonImages/{name}.png"
+
+    img = Image.open(path)
+    img = img.resize((120, 120))
+    ctk_img = ctk.CTkImage(light_image=img, dark_image=img, size=(120, 120))
+
+    col = 0 if idx == 0 else 2
+
+    lbl = ctk.CTkLabel(stat_frame, image=ctk_img, text="")
+    lbl.grid(row=9, column=col, columnspan=2, pady=(5, 0))
+    image_labels[idx] = lbl
 
 def search(idx, entry):
     p = find(entry.get())
@@ -93,39 +113,46 @@ def search(idx, entry):
     pokemon[idx] = p
     show_Stats(idx, p)
     draw_radar()
+    show_image(idx, p["Name"])
 
-ctk.CTkButton(root, text="Search", command=lambda: search(0, e1), corner_radius=8, font=("Roboto", 12, "bold"), border_width=0, width=80).grid(row=0, column=1, padx=5)
-ctk.CTkButton(root, text="Search", command=lambda: search(1, e2), corner_radius=8, font=("Roboto", 12, "bold"), border_width=0, width=80).grid(row=1, column=1, padx=5)
+s1 = ctk.CTkButton(root, text="Search", command=lambda: search(0, e1), corner_radius=8, font=("Roboto", 12, "bold"), border_width=0, width=80)
+s1.grid(row=0, column=1, padx=5)
+s2 = ctk.CTkButton(root, text="Search", command=lambda: search(1, e2), corner_radius=8, font=("Roboto", 12, "bold"), border_width=0, width=80)
+s2.grid(row=1, column=1, padx=5)
 
-# ── Radar chart ──────────────────────────────────────────────────────────────
 chart_frame = ctk.CTkFrame(root, fg_color="transparent")
 chart_frame.grid(row=3, column=0, columnspan=3, pady=(10, 0))
 
 def draw_radar():
     for w in chart_frame.winfo_children():
         w.destroy()
-    plt.style.use('dark_background')
+
+    angles = np.linspace(0, 2*np.pi, 6, endpoint=False).tolist()
+    angles += angles[:1]
+
     fig, ax = plt.subplots(figsize=(3.5, 3.5), subplot_kw=dict(polar=True))
     fig.patch.set_facecolor('#242424')
     ax.set_facecolor('#242424')
-    angles = np.linspace(0, 2*np.pi, len(Stats), endpoint=False).tolist() + [0]
-    ax.set_thetagrids(np.degrees(angles[:-1]), [s.replace("Att", "Attack").replace("Def", "Defense").replace("Spa", "Sp.Atk").replace("Spd", "Sp.Def").replace("Spe", "Speed") for s in Stats], fontsize=8)
+    ax.set_thetagrids(np.degrees(angles[:-1]), Stats, fontsize=8)
+
     for p, color in zip(pokemon, ["red", "blue"]):
         if p is None:
             continue
-        vals = [int(p[s]) for s in Stats] + [int(p[Stats[0]])]
+        vals = [int(p[s]) for s in Stats]
+        vals += vals[:1]
         ax.plot(angles, vals, color=color, linewidth=2, label=p["Name"])
         ax.fill(angles, vals, color=color, alpha=0.15)
+
     ax.legend(fontsize=8, loc="upper right", bbox_to_anchor=(1.35, 1.15))
     plt.tight_layout()
+
     canvas = FigureCanvasTkAgg(fig, chart_frame)
     canvas.draw()
     canvas.get_tk_widget().pack()
     plt.close(fig)
 
-# ── Battle log ───────────────────────────────────────────────────────────────
 def run_battle():
-    if pokemon[0] or pokemon[1] == None:
+    if pokemon[0] is None or pokemon[1] is None:
         messagebox.showwarning("Missing", "Search both Pokemon first.")
         return
     log = simulate_battle(pokemon[0].to_dict(), pokemon[1].to_dict())
@@ -134,12 +161,13 @@ def run_battle():
     log_box.insert("end", log)
     log_box.configure(state="disabled")
 
-ctk.CTkButton(root, text="Simulate Battle", command=run_battle, corner_radius=10, font=("Roboto", 14, "bold"), height=40, fg_color="#b22222").grid(row=4, column=0, columnspan=3, pady=15)
+sim = ctk.CTkButton(root, text="Simulate Battle", command=run_battle, corner_radius=10, font=("Roboto", 14, "bold"), height=40, fg_color="#b22222")
+sim.grid(row=4, column=0, columnspan=3, pady=15)
 log_box = ctk.CTkTextbox(root, height=450, width=320, state="disabled", corner_radius=12, border_width=2, font=("Consolas", 12))
 log_box.grid(row=0, column=3, rowspan=6, padx=15, pady=15, sticky="nsew")
 
 root.update_idletasks()
 width = root.winfo_reqwidth() + 100
-height = root.winfo_reqheight() + 275
+height = root.winfo_reqheight() + 375
 root.geometry(f"{width}x{height}")
 root.mainloop()
