@@ -159,7 +159,5 @@ sim.grid(row=4, column=0, columnspan=3, pady=15)
 log_box = ctk.CTkTextbox(root, height=450, width=320, state="disabled", corner_radius=12, border_width=2, font=("Consolas", 12))
 log_box.grid(row=0, column=3, rowspan=6, padx=15, pady=15, sticky="nsew")
 
-width = root.winfo_reqwidth() + 100
-height = root.winfo_reqheight() + 375
-root.geometry(f"{width}x{height}")
+root.state("zoomed")
 root.mainloop()

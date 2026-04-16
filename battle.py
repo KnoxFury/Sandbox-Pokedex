@@ -1,20 +1,23 @@
 import random
 
 def get_multiplier(atk_types, defender):
-    best = 1.0
+    best = 0.0 
     for atk_type in atk_types:
         col_name = f"Against {atk_type}"
-        multiplier = defender.get(col_name, 1.0)
-        best = max(best, multiplier)
+        multiplier = defender.get(col_name)
+        
+        if multiplier > best:
+            best = multiplier
+        
     return best
 
 def eff_label(m):
+    if m == 0:
+        return "It had no effect"
     if m >= 2:
         return "Super effective!"
     elif m < 1:
-        return "Not very effective..."
-    else:
-        return ""
+        return "Not very effective"
 
 def simulate_battle(p1, p2):
     def types(p):
@@ -43,22 +46,21 @@ def simulate_battle(p1, p2):
             m = get_multiplier(types(atk), dfn)
             phys_ratio = int(atk["Atk"]) / int(dfn["Def"])
             spec_ratio = int(atk["Sp.Atk"]) / int(dfn["Sp.Def"])
-            dmg = max(1, int(int(dfn["HP"]) * max(phys_ratio, spec_ratio) * m * 0.07) + random.randint(-3, 3))
+            if m == 0: dmg = 0
+            else: dmg = int(int(dfn["HP"]) * max(phys_ratio, spec_ratio) * m * 0.07) + random.randint(-3, 3)
             hp[dfn["Name"]] -= dmg
-            label = eff_label(m)
             remaining = max(0, hp[dfn["Name"]])
-            if label:
-                extra = ' ' + label
-            else:
-                extra = ''
-            line = f"  {atk['Name']} => {dfn['Name']}:\n {dmg} dmg (×{m}){extra}\n {dfn['Name']} HP: {remaining}\n"
+            l = eff_label(m)
+            line = f"  {atk['Name']} => {dfn['Name']}:\n {dmg} dmg (×{m}){l}\n {dfn['Name']} HP: {remaining}\n"
             log.append(line)
         turn += 1
         if turn > 50:
             log.append("Draw — too many turns!")
             break
 
-    if hp[n1] > 0:
+    if turn > 50:
+        winner = "Neither"
+    elif hp[n1] > 0:
         winner = n1
     else:
         winner = n2
